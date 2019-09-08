@@ -6,9 +6,9 @@
 - 中文的GPT2训练代码，使用BERT的Tokenizer或GPT2自带的BPE Tokenizer或Sentencepiece的BPE model（感谢[kangzhonghua](https://github.com/kangzhonghua)的贡献）。可以写诗，新闻，小说，或是训练通用语言模型。支持字为单位或是分词模式或是BPE模式。支持大语料训练。
 - 稳定版请参考Stable branch，最新代码请参考Master branch。
 
-## UPDATE 8.24
+## UPDATE 9.8
 
-- 添加分词模式的生成样例（体育新闻）
+- 金庸武俠小說的生成樣例，由[leemengtaiwan](https://github.com/leemengtaiwan)贡献。提供[文章直觀介紹 GPT-2 以及如何視覺化自注意力機制](https://leemeng.tw/gpt2-language-model-generate-chinese-jing-yong-novels.html)。另提供 [Colab 筆記本與模型](https://colab.research.google.com/drive/1MaT8-HUHfZkdCra0OqZEIr0IFCq0MJBx)供任何使用者一鍵生成新樣例。
 
 ## 项目状态
 

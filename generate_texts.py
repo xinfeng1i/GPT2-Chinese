@@ -71,7 +71,7 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
     return logits
 
 
-def sample_sequence(model, length, context, num_samples=1, temperature=1, top_k=0, top_p=0.0, is_xlnet=False,
+def sample_sequence(n_ctx, model, length, context, num_samples=1, temperature=1, top_k=0, top_p=0.0, is_xlnet=False,
                     device='cpu'):
     context = torch.tensor(context, dtype=torch.long, device=device)
     context = context.unsqueeze(0).repeat(num_samples, 1)
@@ -79,7 +79,7 @@ def sample_sequence(model, length, context, num_samples=1, temperature=1, top_k=
     with torch.no_grad():
         for _ in trange(length):
 
-            inputs = {'input_ids': generated}
+            inputs = {'input_ids': generated[0, -(n_ctx - 1):].unsqueeze(0)}
             if is_xlnet:
                 # XLNet is a direct (predict same token, not next token) and bi-directional model by default
                 # => need one additional dummy token in the input (will be masked), attention mask and target mapping (see model docstring)
@@ -148,12 +148,12 @@ def main():
     model.to(device)
     model.eval()
 
+    n_ctx = model.config.n_ctx
+
     if not os.path.exists(save_path):
         os.mkdir(save_path)
     if length == -1:
-        length = model.config.n_ctx // 2
-    elif length > model.config.n_ctx:
-        raise ValueError("Can't get samples longer than window size: %s" % model.config.n_ctx)
+        length = model.config.n_ctx
 
     for i, title in enumerate(titles):
         for j in range(articles_per_title):
@@ -161,6 +161,7 @@ def main():
                 context_tokens = tokenizer.convert_tokens_to_ids(tokenizer.tokenize(title))
                 generated = 0
                 out = sample_sequence(
+                    n_ctx=n_ctx,
                     model=model, length=length,
                     context=context_tokens,
                     temperature=temperature, top_k=topk, top_p=topp, device=device

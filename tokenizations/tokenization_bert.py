@@ -22,7 +22,7 @@ import os
 import unicodedata
 from io import open
 
-from tokenizations.tokenization_utils import PreTrainedTokenizer
+from pytorch_transformers.tokenization_utils import PreTrainedTokenizer
 
 logger = logging.getLogger(__name__)
 

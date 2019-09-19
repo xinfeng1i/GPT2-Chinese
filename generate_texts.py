@@ -133,7 +133,7 @@ def main():
     temperature = args.temperature
     topk = args.topk
     topp = args.topp
-    titles = args.title.split()  # 列表，里面每个元素是一个生成的标题
+    titles = args.titles.split()  # 列表，里面每个元素是一个生成的标题
     if args.titles_file:
         with open(args.titles_file, 'r') as f:
             titles = [line.strip('\n') for line in f.readlines()]

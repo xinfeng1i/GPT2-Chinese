@@ -21,11 +21,6 @@
 - 运行train.py文件，勾选 --raw ，会自动预处理数据。
 - 预处理完成之后，会自动执行训练。
 
-### 自定义文件类型或数据源
-
-1. 修改pre_process_data.py文件中的is_default_file_type()方法，返回值更改为False。
-2. 覆写pre_process_data.py文件中的load()方法，具体示例看文件已注释的方法。
-
 ### 生成文本
 
 ``` bash

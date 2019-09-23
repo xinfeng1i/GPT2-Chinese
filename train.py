@@ -32,7 +32,7 @@ def build_files(data_path, tokenized_data_path, num_pieces, full_tokenizer, min_
             full_line.append(full_tokenizer.convert_tokens_to_ids('[MASK]'))  # 文章开头添加MASK表示文章开始
             full_line.extend(subline)
             full_line.append(full_tokenizer.convert_tokens_to_ids('[CLS]'))  # 文章之间添加CLS表示文章结束
-        with open(tokenized_data_path + 'tokenized_train_{}.txt'.format(i), 'w') as f:
+        with open(os.path.join(tokenized_data_path, 'tokenized_train_{}.txt'.format(i)), 'w') as f:
             for id in full_line:
                 f.write(str(id) + ' ')
     print('finish')
@@ -134,7 +134,7 @@ def main():
     full_len = 0
     print('calculating total steps')
     for i in tqdm(range(num_pieces)):
-        with open(tokenized_data_path + 'tokenized_train_{}.txt'.format(i), 'r') as f:
+        with open(os.path.join(tokenized_data_path, 'tokenized_train_{}.txt'.format(i)), 'r') as f:
             full_len += len([int(item) for item in f.read().strip().split()])
     total_steps = int(full_len / stride * epochs / batch_size / gradient_accumulation)
     print('total steps = {}'.format(total_steps))
@@ -164,7 +164,7 @@ def main():
         random.shuffle(x)
         piece_num = 0
         for i in x:
-            with open(tokenized_data_path + 'tokenized_train_{}.txt'.format(i), 'r') as f:
+            with open(os.path.join(tokenized_data_path, 'tokenized_train_{}.txt'.format(i)), 'r') as f:
                 line = f.read().strip()
             tokens = line.split()
             tokens = [int(token) for token in tokens]
@@ -230,10 +230,10 @@ def main():
             piece_num += 1
 
         print('saving model for epoch {}'.format(epoch + 1))
-        if not os.path.exists(output_dir + 'model_epoch{}'.format(epoch + 1)):
-            os.mkdir(output_dir + 'model_epoch{}'.format(epoch + 1))
+        if not os.path.exists(os.path.join(output_dir, 'model_epoch{}'.format(epoch + 1))):
+            os.mkdir(os.path.join(output_dir, 'model_epoch{}'.format(epoch + 1)))
         model_to_save = model.module if hasattr(model, 'module') else model
-        model_to_save.save_pretrained(output_dir + 'model_epoch{}'.format(epoch + 1))
+        model_to_save.save_pretrained(os.path.join(output_dir, 'model_epoch{}'.format(epoch + 1)))
         # torch.save(scheduler.state_dict(), output_dir + 'model_epoch{}/scheduler.pt'.format(epoch + 1))
         # torch.save(optimizer.state_dict(), output_dir + 'model_epoch{}/optimizer.pt'.format(epoch + 1))
         print('epoch {} finished'.format(epoch + 1))
@@ -243,10 +243,10 @@ def main():
         print('time for one epoch: {}'.format(then - now))
 
     print('training finished')
-    if not os.path.exists(output_dir + 'final_model'):
-        os.mkdir(output_dir + 'final_model')
+    if not os.path.exists(os.path.join(output_dir, 'final_model')):
+        os.mkdir(os.path.join(output_dir, 'final_model'))
     model_to_save = model.module if hasattr(model, 'module') else model
-    model_to_save.save_pretrained(output_dir + 'final_model')
+    model_to_save.save_pretrained(os.path.join(output_dir, 'final_model'))
     # torch.save(scheduler.state_dict(), output_dir + 'final_model/scheduler.pt')
     # torch.save(optimizer.state_dict(), output_dir + 'final_model/optimizer.pt')
 

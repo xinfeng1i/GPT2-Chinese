@@ -10,20 +10,13 @@ from datetime import datetime
 from tqdm import tqdm
 from torch.nn import DataParallel
 from tokenizations.bpe_tokenizer import get_encoder
-import pre_process_data as ppd
 
 
 def build_files(data_path, tokenized_data_path, num_pieces, full_tokenizer, min_length):
-    if ppd.is_default_file_type():  # 是否采用默认json类型，默认编码为utf-8
-        if ppd.DEFAULT_FILE_TYPE in data_path:
-            with open(data_path, 'r', encoding='utf8') as f:
-                print('reading lines')
-                lines = json.load(f)
-                lines = [line.replace('\n', ' [SEP] ') for line in lines]  # 用[SEP]表示换行, 段落之间使用SEP表示段落结束
-        else:
-            raise Exception("请使用json文件类型，或者自定义文件类型，请看pre_process_data.py文件load方法")
-    else:  # 自定义数据源的，调用pre_process_data.py中的load方法
-        lines = ppd.load()
+    with open(data_path, 'r', encoding='utf8') as f:
+        print('reading lines')
+        lines = json.load(f)
+        lines = [line.replace('\n', ' [SEP] ') for line in lines]  # 用[SEP]表示换行, 段落之间使用SEP表示段落结束
     all_len = len(lines)
     if not os.path.exists(tokenized_data_path):
         os.mkdir(tokenized_data_path)
@@ -180,6 +173,8 @@ def main():
             while start_point < len(tokens) - n_ctx:
                 samples.append(tokens[start_point: start_point + n_ctx])
                 start_point += stride
+            if start_point < len(tokens):
+                samples.append(tokens[len(tokens)-n_ctx:])
             random.shuffle(samples)
             for step in range(len(samples) // batch_size):  # drop last
 

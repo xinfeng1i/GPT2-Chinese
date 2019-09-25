@@ -8,7 +8,6 @@ import numpy as np
 from datetime import datetime
 from torch.nn import DataParallel
 from tqdm import tqdm
-import pre_process_data as ppd
 
 '''
 如果训练材料是全部堆在一起不分篇章的话用这个文件
@@ -16,16 +15,10 @@ import pre_process_data as ppd
 
 
 def build_files(raw_data_path, tokenized_data_path, full_tokenizer, num_pieces):
-    if ppd.is_default_file_type():  # 是否采用默认json类型，默认编码为utf-8
-        if ppd.DEFAULT_FILE_TYPE in raw_data_path:
-            with open(raw_data_path, 'r', encoding='utf8') as f:
-                print('reading lines')
-                lines = json.load(f)
-                lines = [line.replace('\n', ' [SEP] ') for line in lines]  # 用[SEP]表示换行, 段落之间使用SEP表示段落结束
-        else:
-            raise Exception("请使用json文件类型，或者自定义文件类型，请看pre_process_data.py文件load方法")
-    else:  # 自定义数据源的，调用pre_process_data.py中的load方法
-        lines = ppd.load()
+    with open(raw_data_path, 'r', encoding='utf8') as f:
+        print('reading lines')
+        lines = json.load(f)
+        lines = [line.replace('\n', ' [SEP] ') for line in lines]  # 用[SEP]表示换行, 段落之间使用SEP表示段落结束
     single = ''.join(lines)
     len_single = len(single)
     if not os.path.exists(tokenized_data_path):
@@ -155,6 +148,8 @@ def main():
             while start_point < len(tokens) - n_ctx:
                 samples.append(tokens[start_point: start_point + n_ctx])
                 start_point += stride
+            if start_point < len(tokens):
+                samples.append(tokens[len(tokens)-n_ctx:])
             random.shuffle(samples)
             for step in range(len(samples) // batch_size):
 

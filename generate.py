@@ -68,13 +68,13 @@ def top_k_top_p_filtering(logits, top_k=0, top_p=0.0, filter_value=-float('Inf')
     return logits
 
 
-def sample_sequence(model, context, length, temperature=1, top_k=0, top_p=0.0, device='cpu'):
+def sample_sequence(model, context, length, n_ctx, temperature=1, top_k=0, top_p=0.0, device='cpu'):
     context = torch.tensor(context, dtype=torch.long, device=device)
     context = context.unsqueeze(0)
     generated = context
     with torch.no_grad():
         for _ in trange(length):
-            inputs = {'input_ids': generated}
+            inputs = {'input_ids': generated[0][-(n_ctx-1):].unsqueeze(0)}
             outputs = model(
                 **inputs)  # Note: we could also use 'past' with GPT-2/Transfo-XL/XLNet (cached hidden-states)
             next_token_logits = outputs[0][0, -1, :] / temperature
@@ -106,12 +106,12 @@ def fast_sample_sequence(model, context, length, temperature=1, top_k=0, top_p=0
 
 
 # 通过命令行参数--fast_pattern，指定模式
-def generate(model, context, length, temperature=1, top_k=0, top_p=0.0, device='cpu', is_fast_pattern=False):
+def generate(n_ctx, model, context, length, temperature=1, top_k=0, top_p=0.0, device='cpu', is_fast_pattern=False):
     if is_fast_pattern:
         return fast_sample_sequence(model, context, length, temperature=temperature, top_k=top_k, top_p=top_p,
                                     device=device)
     else:
-        return sample_sequence(model, context, length, temperature=temperature, top_k=top_k, top_p=top_p, device=device)
+        return sample_sequence(model, context, length, n_ctx, temperature=temperature, top_k=top_k, top_p=top_p, device=device)
 
 
 def main():
@@ -159,10 +159,10 @@ def main():
     model.to(device)
     model.eval()
 
+    n_ctx = model.config.n_ctx
+
     if length == -1:
-        length = model.config.n_ctx - len(args.prefix)
-    elif length > model.config.n_ctx - len(args.prefix):
-        raise ValueError("Can't get samples longer than window size: %s" % model.config.n_ctx)
+        length = model.config.n_ctx
     if args.save_samples:
         if not os.path.exists(args.save_samples_path):
             os.makedirs(args.save_samples_path)
@@ -173,6 +173,7 @@ def main():
         generated = 0
         for _ in range(nsamples // batch_size):
             out = generate(
+                n_ctx=n_ctx,
                 model=model,
                 context=context_tokens,
                 length=length,

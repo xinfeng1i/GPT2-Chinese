@@ -207,18 +207,18 @@ def main():
                     overall_step += 1
 
                     # how many steps to print loss log
-                    if (overall_step + 1) % log_step == 0:
+                    if overall_step % log_step == 0:
                         now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
                         print('now time: {}: Step {} of piece {} of epoch {}. Global Step: {}, Mean Loss: {}'.format(
                             now_time,
                             (step + 1) // gradient_accumulation,
                             piece_num,
                             epoch + 1,
-                            overall_step + 1,
+                            overall_step,
                             mean_loss))
 
                     # how many steps to save a checkpoint
-                    if (overall_step + 1) % args.save_per_step == 0:
+                    if overall_step % args.save_per_step == 0:
                         if not os.path.exists(os.path.join(output_dir, "model_step_%d"%(overall_step+1))):
                             os.mkdir(os.path.join(output_dir, "model_step_%d"%(overall_step+1)))
                         model_to_save = model.module if hasattr(model, 'module') else model

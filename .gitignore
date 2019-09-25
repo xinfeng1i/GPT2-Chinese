@@ -8,3 +8,13 @@ data/
 .samples.txt
 .idea/modules.xml
 .idea/vcs.xml
+gen_samples_1.txt/
+gen_samples_2.txt/
+gen_samples_shopping_1.txt/
+gen_samples_shopping_2.txt/
+gen_samples_shopping_3.txt/
+gen_samples_shopping_4.txt/
+gen_samples_shopping_5.txt/
+gen_samples_shopping_6.txt/
+my_data/
+saved_models/

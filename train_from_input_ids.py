@@ -1,3 +1,5 @@
+# coding: utf-8
+
 import pytorch_transformers
 import torch
 import os
@@ -10,20 +12,13 @@ from datetime import datetime
 from tqdm import tqdm
 from torch.nn import DataParallel
 from tokenizations.bpe_tokenizer import get_encoder
-# import pre_process_data as ppd
 
 
 def build_files(data_path, tokenized_data_path, num_pieces, full_tokenizer, min_length):
-    if ppd.is_default_file_type():  # 是否采用默认json类型，默认编码为utf-8
-        if ppd.DEFAULT_FILE_TYPE in data_path:
-            with open(data_path, 'r', encoding='utf8') as f:
-                print('reading lines')
-                lines = json.load(f)
-                lines = [line.replace('\n', ' [SEP] ') for line in lines]  # 用[SEP]表示换行, 段落之间使用SEP表示段落结束
-        else:
-            raise Exception("请使用json文件类型，或者自定义文件类型，请看pre_process_data.py文件load方法")
-    else:  # 自定义数据源的，调用pre_process_data.py中的load方法
-        lines = ppd.load()
+    with open(data_path, 'r', encoding='utf8') as f:
+        print('reading lines')
+        lines = json.load(f)
+        lines = [line.replace('\n', ' [SEP] ') for line in lines]  # 用[SEP]表示换行, 段落之间使用SEP表示段落结束
     all_len = len(lines)
     if not os.path.exists(tokenized_data_path):
         os.mkdir(tokenized_data_path)
@@ -149,6 +144,7 @@ def main():
     print('starting training')
     overall_step = 0
     running_loss = 0
+    running_step = 0
     for epoch in range(epochs):
         print('epoch {}'.format(epoch + 1))
         now = datetime.now()
@@ -201,53 +197,53 @@ def main():
                     torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
                 #  optimizer step
+                running_loss += loss.item()
+                running_step += 1
+                mean_loss = running_loss * gradient_accumulation / running_step
                 if (step + 1) % gradient_accumulation == 0:
-                    running_loss += loss.item()
                     optimizer.step()
                     optimizer.zero_grad()
                     scheduler.step()
                     overall_step += 1
-                    # if (overall_step + 1) % log_step == 0:
-                    #    tb_writer.add_scalar('loss', loss.item(), overall_step)
-                if (overall_step + 1) % log_step == 0:
-                    print('now time: {}:{}. Step {} of piece {} of epoch {}, loss {}'.format(
-                        datetime.now().hour,
-                        datetime.now().minute,
-                        (step + 1) // gradient_accumulation,
-                        piece_num,
-                        epoch + 1,
-                        running_loss * gradient_accumulation / log_step))
-                    running_loss = 0
 
-                # 每多少步保存一次模型
-                if (overall_step + 1) % args.save_per_step == 0:
-                    if not os.path.exists(os.path.join(output_dir, "model_step_%d"%(overall_step+1))):
-                        os.mkdir(os.path.join(output_dir, "model_step_%d"%(overall_step+1)))
-                    model_to_save = model.module if hasattr(model, 'module') else model
-                    model_to_save.save_pretrained(os.path.join(output_dir, "model_step_%d"%(overall_step+1)))
+                    # how many steps to print loss log
+                    if (overall_step + 1) % log_step == 0:
+                        now_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+                        print('now time: {}: Step {} of piece {} of epoch {}. Global Step: {}, Mean Loss: {}'.format(
+                            now_time,
+                            (step + 1) // gradient_accumulation,
+                            piece_num,
+                            epoch + 1,
+                            overall_step + 1,
+                            mean_loss))
+
+                    # how many steps to save a checkpoint
+                    if (overall_step + 1) % args.save_per_step == 0:
+                        if not os.path.exists(os.path.join(output_dir, "model_step_%d"%(overall_step+1))):
+                            os.mkdir(os.path.join(output_dir, "model_step_%d"%(overall_step+1)))
+                        model_to_save = model.module if hasattr(model, 'module') else model
+                        model_to_save.save_pretrained(os.path.join(output_dir, "model_step_%d"%(overall_step+1)))
 
             piece_num += 1
 
+        # save model per epoch
         print('saving model for epoch {}'.format(epoch + 1))
         if not os.path.exists(os.path.join(output_dir, 'model_epoch{}'.format(epoch + 1))):
             os.mkdir(os.path.join(output_dir, 'model_epoch{}'.format(epoch + 1)))
         model_to_save = model.module if hasattr(model, 'module') else model
         model_to_save.save_pretrained(os.path.join(output_dir, 'model_epoch{}'.format(epoch + 1)))
-        # torch.save(scheduler.state_dict(), output_dir + 'model_epoch{}/scheduler.pt'.format(epoch + 1))
-        # torch.save(optimizer.state_dict(), output_dir + 'model_epoch{}/optimizer.pt'.format(epoch + 1))
         print('epoch {} finished'.format(epoch + 1))
 
         then = datetime.now()
         print('time: {}'.format(then))
         print('time for one epoch: {}'.format(then - now))
 
+    # save the final model
     print('training finished')
     if not os.path.exists(os.path.join(output_dir, 'final_model')):
         os.mkdir(os.path.join(output_dir, 'final_model'))
     model_to_save = model.module if hasattr(model, 'module') else model
     model_to_save.save_pretrained(os.path.join(output_dir, 'final_model'))
-    # torch.save(scheduler.state_dict(), output_dir + 'final_model/scheduler.pt')
-    # torch.save(optimizer.state_dict(), output_dir + 'final_model/optimizer.pt')
 
 
 if __name__ == '__main__':
